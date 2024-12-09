@@ -1,0 +1,293 @@
+1.引入aop依赖
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+
+2. 创建自定义注解 com.example.demo.annotation.LogAnnotation
+@Retention(RetentionPolicy.RUNTIME) 指定了这个注解将在运行时可用。
+
+`@Retention` 是 Java 中的一个元注解（即用于注解其他注解的注解），它指定了被它修饰的注解可以保留多长时间。换句话说，`@Retention` 定义了注解的生命周期：它们是在编译期被丢弃、还是被写入 class 文件中，或者是在运行时可获取。
+
+`@Retention` 接受一个 `RetentionPolicy` 枚举类型的单个值作为参数，这个枚举定义了三种不同的策略：
+
+1. **SOURCE**：
+   - 注解仅保留在源代码级别，在编译时会被丢弃，不会出现在 `.class` 文件中。
+   - 这种策略适用于那些只需要在编译期间起作用的注解，比如一些静态分析工具或编译器插件可能会用到的注解。
+
+2. **CLASS**（默认值）：
+   - 注解会写入 `.class` 文件，但在运行时不可见。
+   - 编译器会将注解保存在类文件中，但是 JVM 在加载类的时候并不会加载这些注解信息到内存中，所以通过反射是无法获取到这些注解的。
+
+3. **RUNTIME**：
+   - 注解不仅会写入 `.class` 文件，并且会在运行时由 JVM 加载并可用。
+   - 也就是说，你可以使用反射机制在程序运行时读取这些注解的信息。
+   - 这种策略通常用于需要在运行时动态处理注解的情况，如AOP编程、依赖注入等。
+
+下面是 `@Retention` 的使用示例：
+
+```java
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+@Retention(RetentionPolicy.RUNTIME)
+public @interface MyAnnotation {
+    String value();
+}
+```
+
+在这个例子中，`MyAnnotation` 被设置为 `RUNTIME` 策略，这意味着它可以在运行时通过反射来访问。
+
+选择正确的保留策略很重要，因为它会影响性能和类文件的大小。如果你不需要在运行时访问注解，那么最好不要选择 `RUNTIME` 策略，因为这会增加额外的开销。
+
+
+@Target(ElementType.METHOD) 表明这个注解只能应用于方法上
+
+`@Target` 是 Java 中的一个元注解，用于指定自定义注解可以应用的目标元素类型。通过 `@Target`，你可以限定你的注解能被应用于哪些程序结构上，比如类、方法、字段等。这有助于提高代码的清晰度，并防止将注解错误地应用到不支持的元素上。
+
+`@Target` 接受一个或多个 `ElementType` 枚举类型的值作为参数，每个值代表一种目标元素类型。以下是 `ElementType` 的所有可能值及其含义：
+
+1. **TYPE**：
+   - 类、接口（包括注解类型）或枚举声明。
+
+2. **FIELD**：
+   - 字段、枚举常量。
+
+3. **METHOD**：
+   - 方法声明。
+
+4. **PARAMETER**：
+   - 方法参数。
+
+5. **CONSTRUCTOR**：
+   - 构造函数声明。
+
+6. **LOCAL_VARIABLE**：
+   - 局部变量声明。
+
+7. **ANNOTATION_TYPE**：
+   - 注解类型声明。
+
+8. **PACKAGE**：
+   - 包声明。
+
+9. **TYPE_PARAMETER** (从 Java 8 开始)：
+   - 类型参数声明。
+
+10. **TYPE_USE** (从 Java 8 开始)：
+    - 任何使用类型的上下文，如泛型类型、类型转换、实现子句等。
+
+下面是一个使用 `@Target` 的例子，它限制了自定义注解只能应用于方法和字段：
+
+```java
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
+
+@Target({ ElementType.METHOD, ElementType.FIELD })
+public @interface MyAnnotation {
+    String value();
+}
+```
+
+在这个例子中，`MyAnnotation` 只能应用于方法和字段。如果尝试将其应用于其他元素，编译器将会报错。
+
+### 应用场景
+
+- 如果你创建的是一个专门用于方法上的性能监控注解，那么你应该使用 `@Target(ElementType.METHOD)` 来确保开发者不会误将该注解应用到其他地方。
+- 对于那些只适用于类级别的配置信息，如服务组件标识符，应该使用 `@Target(ElementType.TYPE)`。
+- 当你需要在特定的构造函数上添加某些行为时，例如初始化检查，你可以将你的注解限制为 `@Target(ElementType.CONSTRUCTOR)`。
+
+总之，`@Target` 提供了一种方式来增强注解的语义，使得它们更加明确且易于使用。正确地使用 `@Target` 不仅可以减少错误，还能使代码更易读和维护。
+
+3. 使用AOP实现日志记录逻辑 com.example.demo.aspect.LogAspect
+@Pointcut("@annotation(Loggable)") 定义了一个切入点，匹配所有带有@Loggable注解的方法。
+
+`@Pointcut` 是 Spring AOP（面向切面编程）中的一个关键注解，用于定义切入点表达式。切入点表达式用来匹配连接点（Join Point），即程序执行过程中的某些特定点，比如方法的调用、异常抛出等。通过定义 `@Pointcut`，你可以指定在哪些地方应用通知（Advice），如前置通知（Before Advice）、后置通知（After Advice）等。
+
+### @Pointcut 的基本语法和使用
+
+`@Pointcut` 注解通常会与 AOP 切面类中的方法关联，这个方法本身没有实现逻辑，它的作用仅仅是定义一个或多个切入点表达式。这些表达式可以是简单的，也可以是非常复杂的，并且可以通过名称在其他通知中引用。
+
+#### 定义一个简单的切入点
+
+```java
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Pointcut;
+import org.springframework.stereotype.Component;
+
+@Aspect
+@Component
+public class MyAspect {
+
+    // 定义一个名为 "businessServiceMethods" 的切入点，匹配所有业务服务接口的方法
+    @Pointcut("execution(* com.example.service..*.*(..))")
+    public void businessServiceMethods() {}
+}
+```
+
+在这个例子中，`businessServiceMethods()` 方法定义了一个切入点表达式，它匹配了 `com.example.service` 包及其子包下的所有方法。
+
+#### 使用切入点
+
+一旦定义了切入点，你就可以在其他通知中引用它：
+
+```java
+import org.aspectj.lang.annotation.Before;
+import org.aspectj.lang.annotation.AfterReturning;
+
+@Aspect
+@Component
+public class LoggingAspect {
+
+    // 在业务服务方法执行之前打印日志
+    @Before("MyAspect.businessServiceMethods()")
+    public void logBefore(JoinPoint joinPoint) {
+        System.out.println("Before method: " + joinPoint.getSignature().getName());
+    }
+
+    // 在业务服务方法成功返回之后打印日志
+    @AfterReturning(pointcut = "MyAspect.businessServiceMethods()", returning = "result")
+    public void logAfterReturning(JoinPoint joinPoint, Object result) {
+        System.out.println("Method returned value: " + result);
+    }
+}
+```
+
+### 常见的切入点表达式
+
+Spring AOP 支持 AspectJ 的切入点表达式语言，这里有一些常见的切入点表达式的示例：
+
+- **execution**：匹配方法执行连接点。这是最常用的切入点表达式。
+  - `execution(public * *(..))`：匹配所有的公共方法。
+  - `execution(* set*(..))`：匹配所有以 "set" 开头的方法。
+  - `execution(* com.example.service..*(..))`：匹配 `com.example.service` 包及其子包下的所有方法。
+
+- **within**：限制匹配到特定类型的连接点。
+  - `within(com.example.service.*)`：匹配 `com.example.service` 包中的所有类型内的连接点。
+
+- **this** 和 **target**：分别匹配当期AOP代理对象类型或目标对象类型。
+
+- **args**：匹配运行时传递给方法的实际参数类型。
+  - `args(java.io.Serializable)`：匹配接受 `Serializable` 参数的方法。
+
+- **@annotation**：匹配带有特定注解的方法。
+  - `@annotation(org.springframework.transaction.annotation.Transactional)`：匹配所有被 `@Transactional` 注解标记的方法。
+
+### 复合切入点表达式
+
+你可以组合多个切入点表达式来创建更复杂的匹配规则。例如：
+
+```java
+@Pointcut("execution(* com.example.service..*(..)) && args(java.util.Date)")
+public void serviceMethodsTakingDate() {}
+```
+
+这将匹配 `com.example.service` 包及其子包下接收 `java.util.Date` 类型参数的所有方法。
+
+### 总结
+
+`@Pointcut` 是 Spring AOP 中非常强大的工具，它允许开发者精确地控制何时以及何地应用横切关注点（如日志记录、事务管理等）。正确地设计和使用切入点可以使代码更加模块化、易于维护，并有助于减少重复代码。
+@Around("loggableMethods()") 指定了一种环绕通知，它会在目标方法执行之前和之后都执行。
+在logMethodExecution方法中，我们打印了方法签名，并计算了方法执行时间。
+
+
+通知方式
+在Spring AOP中，通知（Advice）是在特定连接点（Join Point）执行的增强处理。通知定义了“何时”执行横切逻辑，以及该逻辑的具体内容。Spring AOP 支持多种类型的通知，每种通知方式都有其特定的用途和执行时机。以下是几种主要的通知类型：
+
+1. **前置通知（Before Advice）**
+   - 使用 `@Before` 注解。
+   - 在目标方法调用之前执行。
+   - 即使方法抛出异常，前置通知也会执行。
+   - 如果前置通知本身抛出了异常，则目标方法将不会被执行。
+
+2. **后置返回通知（After Returning Advice）**
+   - 使用 `@AfterReturning` 注解。
+   - 在目标方法成功完成后执行（即没有抛出异常的情况下）。
+   - 可以访问目标方法的返回值，并可以在返回给调用者之前修改它。
+
+3. **后置最终通知（After (Finally) Advice）**
+   - 使用 `@After` 注解。
+   - 无论目标方法是否抛出异常，都会执行。
+   - 类似于 try-catch-finally 结构中的 finally 块。
+
+4. **后置异常通知（After Throwing Advice）**
+   - 使用 `@AfterThrowing` 注解。
+   - 当目标方法抛出异常时执行。
+   - 可以指定捕获特定类型的异常或所有异常。
+
+5. **环绕通知（Around Advice）**
+   - 使用 `@Around` 注解。
+   - 是最强大的通知类型，它允许你完全控制对目标方法的调用，包括选择是否继续执行目标方法、在调用前后添加行为，甚至可以改变返回值或抛出异常。
+   - 环绕通知必须显式地调用 `ProceedingJoinPoint.proceed()` 方法来执行目标方法，否则目标方法不会被调用。
+
+### 示例代码
+
+以下是一些简单的示例，展示了如何使用不同的通知类型：
+
+```java
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+import org.aspectj.lang.annotation.AfterReturning;
+import org.aspectj.lang.annotation.After;
+import org.aspectj.lang.annotation.AfterThrowing;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.springframework.stereotype.Component;
+
+@Aspect
+@Component
+public class LoggingAspect {
+
+    // 前置通知
+    @Before("execution(* com.example.service..*.*(..))")
+    public void logBefore() {
+        System.out.println("Logging before method execution");
+    }
+
+    // 后置返回通知
+    @AfterReturning(pointcut = "execution(* com.example.service..*.*(..))", returning = "result")
+    public void logAfterReturning(Object result) {
+        System.out.println("Method returned value: " + result);
+    }
+
+    // 后置最终通知
+    @After("execution(* com.example.service..*.*(..))")
+    public void logAfter() {
+        System.out.println("Logging after method execution, regardless of outcome");
+    }
+
+    // 后置异常通知
+    @AfterThrowing(pointcut = "execution(* com.example.service..*.*(..))", throwing = "ex")
+    public void logAfterThrowing(Throwable ex) {
+        System.out.println("Exception thrown: " + ex);
+    }
+
+    // 环绕通知
+    @Around("execution(* com.example.service..*.*(..))")
+    public Object logAround(ProceedingJoinPoint joinPoint) throws Throwable {
+        System.out.println("Start around advice");
+        try {
+            Object result = joinPoint.proceed(); // 执行目标方法
+            System.out.println("End around advice, method returned: " + result);
+            return result;
+        } catch (Throwable ex) {
+            System.out.println("Around advice caught exception: " + ex);
+            throw ex; // 重新抛出异常
+        }
+    }
+}
+```
+
+### 注意事项
+
+- 当有多个相同类型的通知应用于同一个连接点时，它们的执行顺序是不确定的。
+- 对于环绕通知，如果不想执行目标方法，可以选择不调用 `proceed()` 方法。
+- 应谨慎使用环绕通知，因为它赋予了开发者很大的控制权，但同时也增加了复杂性，可能导致难以调试的问题。
+
+通过合理地使用这些通知类型，你可以有效地分离业务逻辑与横切关注点，从而提高代码的模块化程度和可维护性。
+
+4. 应用自定义注解
+com.example.demo.service.impl.AopServiceImpl
+
+5. 测试日志输出情况
+com.example.demo.service.impl.AopServiceImplTest
