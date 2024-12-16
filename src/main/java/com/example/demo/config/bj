@@ -1,0 +1,80 @@
+AOP（面向切面编程，Aspect-Oriented Programming）、拦截器（Interceptor）和过滤器（Filter）都是用于在应用程序中实现横切关注点（如日志记录、事务管理、权限检查等）的技术手段。它们各自有不同的应用场景和特点，但也有一些共同之处。下面我将详细解释三者的区别与联系。
+
+### AOP（面向切面编程）
+
+#### 特点：
+- **定义**：AOP是一种编程范式，旨在通过分离业务逻辑与系统服务（例如事务处理、日志记录等），提高模块化程度。
+- **工作方式**：AOP框架允许你定义“切面”（Aspects），这些切面可以包含前置通知（Before Advice）、后置通知（After Advice）、环绕通知（Around Advice）等。这些通知可以在方法调用前后执行特定的代码。
+- **应用范围**：通常应用于整个应用程序或其部分组件，特别是那些具有横切关注点的地方。它直接作用于业务逻辑层，可以对方法进行增强而无需修改原始代码。
+- **依赖注入**：在Spring框架中，AOP可以通过XML配置或注解来声明，并且支持依赖注入，使得切面能够访问其他Bean。
+
+#### 例子：
+```java
+@Aspect
+@Component
+public class LoggingAspect {
+    @Before("execution(* com.example.service.*.*(..))")
+    public void logBefore(JoinPoint joinPoint) {
+        System.out.println("Logging before method: " + joinPoint.getSignature().getName());
+    }
+}
+```
+
+### 拦截器（Interceptor）
+
+#### 特点：
+- **定义**：拦截器是MVC架构模式的一部分，主要用于Web开发中的请求/响应处理过程。它可以在控制器方法之前或之后执行某些操作。
+- **工作方式**：拦截器可以在请求到达目标处理器之前对其进行预处理，也可以在处理器完成后但视图渲染之前进行后处理。它可以用来做诸如身份验证、权限控制、参数校验等工作。
+- **应用范围**：主要集中在Web层，特别是在Spring MVC中，拦截器可以注册到特定的URL模式上，以拦截匹配路径的所有请求。
+- **灵活性**：相比过滤器，拦截器提供了更多的上下文信息，比如可以访问到`Handler`对象（即Controller中的方法），并且可以根据返回值决定是否继续执行后续的操作。
+
+#### 例子：
+```java
+public class AuthInterceptor extends HandlerInterceptorAdapter {
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        // 进行身份验证逻辑...
+        return true; // 返回true表示放行请求，false则阻止
+    }
+}
+```
+
+### 过滤器（Filter）
+
+#### 特点：
+- **定义**：过滤器是Servlet规范的一部分，是Java Web应用程序中最基础的一种组件。它位于客户端与服务器端之间，可以对进入容器的HTTP请求和响应进行预处理和后处理。
+- **工作方式**：过滤器按照链式调用的方式工作，每个过滤器都可以选择是否让请求继续传递给下一个过滤器或者直接终止请求。它可以用来实现如字符编码转换、日志记录、安全检查等功能。
+- **应用范围**：广泛适用于任何基于Servlet的应用程序，不限于特定框架。过滤器是在所有请求到达Servlet之前最先被执行的部分之一。
+- **性能考虑**：由于过滤器会处理每一个请求，因此应谨慎使用，避免不必要的开销。
+
+#### 例子：
+```java
+@WebFilter("/*")
+public class EncodingFilter implements Filter {
+    @Override
+    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException {
+        HttpServletRequest request = (HttpServletRequest) req;
+        HttpServletResponse response = (HttpServletResponse) res;
+
+        request.setCharacterEncoding("UTF-8");
+        response.setContentType("text/html;charset=UTF-8");
+
+        chain.doFilter(request, response);
+    }
+}
+```
+
+### 区别与联系
+
+| 属性 | AOP | 拦截器 | 过滤器 |
+| --- | --- | --- | --- |
+| **层次** | 应用程序层面 | Web层（MVC） | Web层（Servlet） |
+| **触发时机** | 方法调用前后 | 请求到达处理器前后 | 请求到达Servlet前后 |
+| **配置方式** | 注解或XML配置 | 配置类或XML配置 | web.xml或注解配置 |
+| **作用对象** | 方法 | 控制器方法 | 所有请求 |
+
+#### 联系：
+- 它们都可以用来实现横切关注点，比如日志记录、性能监控、安全性检查等。
+- 在实际项目中，这三种技术往往结合使用，以达到更好的效果。例如，过滤器可以处理通用的HTTP请求头信息，拦截器负责更具体的业务规则验证，而AOP则深入到业务逻辑内部，提供细粒度的增强功能。
+
+综上所述，了解每种工具的特点及其适用场景，可以帮助开发者根据具体需求选择最合适的解决方案。如果你有更具体的问题或需要进一步的帮助，请随时告诉我！

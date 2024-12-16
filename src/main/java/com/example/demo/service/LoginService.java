@@ -1,8 +1,12 @@
 package com.example.demo.service;
 
 
+import java.util.Map;
+
 public interface LoginService {
 
-    public void processRequest(String param);
+    public String graphcode(String param);
 
+
+    public Map login(String username,String code);
 }

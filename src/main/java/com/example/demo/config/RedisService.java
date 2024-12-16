@@ -6,6 +6,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.TimeUnit;
+
 @Component
 public class RedisService {
 
@@ -21,6 +23,10 @@ public class RedisService {
 
     public void setValue(String key,String value){
         redisTemplate.opsForValue().set(key,value);
+    }
+
+    public void setValue(String key,String value,long time){
+        redisTemplate.opsForValue().set(key,value,time, TimeUnit.MILLISECONDS);
     }
 
     public Object getValue(String key){
