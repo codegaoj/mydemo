@@ -2,6 +2,7 @@ package com.example.demo.config;
 
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import redis.clients.jedis.Jedis;
 
 public class Publisher {
@@ -20,6 +21,12 @@ public class Publisher {
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    public void send(StringRedisTemplate redisTemplate) {
+        for (int i = 0; i < 10; i++) {
+            redisTemplate.convertAndSend("mychannel","test"+i);
         }
     }
 }

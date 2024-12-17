@@ -1,9 +1,15 @@
 package com.example.demo.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.listener.PatternTopic;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
+import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPubSub;
-
+@Configuration
 public class Subscriber {
     private static final String CHANNEL = "myChannel";
     @Value("${spring.redis.host}")
@@ -19,5 +25,24 @@ public class Subscriber {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    @Bean
+    RedisMessageListenerContainer container(RedisConnectionFactory connectionFactory,
+                                            MessageListenerAdapter listenerAdapter()) {
+        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+        container.setConnectionFactory(connectionFactory);
+        container.addMessageListener(listenerAdapter(), new PatternTopic("mychannel"));
+        return container;
+    }
+
+    @Bean
+    MessageListenerAdapter listenerAdapter(Receiver receiver) {
+        return new MessageListenerAdapter(receiver, "receiveMessage");
+    }
+
+    @Bean
+    Receiver receiver() {
+        return new Receiver();
     }
 }

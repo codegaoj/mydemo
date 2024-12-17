@@ -1,7 +1,7 @@
 package com.example.demo.Constant;
 
-public final class  Constant {
+public  class  Constant {
 
-    public final String VerCode="VerCode_%s";
+    public static String VERRCODE="VerCode_%s";
 
 }
