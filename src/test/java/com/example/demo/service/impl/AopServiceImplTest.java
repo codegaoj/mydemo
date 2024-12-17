@@ -1,5 +1,6 @@
 package com.example.demo.service.impl;
 
+import com.example.demo.config.ConsumerRunner;
 import com.example.demo.config.Publisher;
 import com.example.demo.config.RedisService;
 import com.example.demo.service.AopService;
@@ -30,6 +31,9 @@ public class AopServiceImplTest {
     @Autowired
     private Publisher publisher;
 
+    @Autowired
+    private ConsumerRunner consumerRunner;
+
     @Test
     public void processRequest() {
         aopService.processRequest("test-aop");
@@ -53,6 +57,16 @@ public class AopServiceImplTest {
     @Test
     public void myredisMqTest() {
         publisher.send(stringRedisTemplate);
+//        for (int i = 0; i < 5; i++) {
+//            boolean b = redisService.tryAcquireLock();
+//            try {
+//                Thread.sleep(7000);
+//            } catch (InterruptedException e) {
+//                throw new RuntimeException(e);
+//            }
+//            System.out.println(b);
+//        }
+//        redisService.tryAcquireLock();
         System.out.println("--end---");
     }
 

@@ -7,9 +7,12 @@ import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import static com.example.demo.Constant.Constant.LOCK_KEY;
 
 @Component
 public class RedisService {
@@ -36,6 +39,14 @@ public class RedisService {
         return redisTemplate.opsForValue().get(key);
     }
 
+    public boolean tryAcquireLock() {
+        return redisTemplate.opsForValue().setIfAbsent(LOCK_KEY, "LOCK", Duration.ofSeconds(10));
+    }
+
+
+    public void releaseLock() {
+        redisTemplate.delete(LOCK_KEY);
+    }
 
     public void setZsetValue(String key,String value,double score){
         redisTemplate.opsForZSet().add(key,value,score);
