@@ -1,12 +1,20 @@
 package com.example.demo.aspect;
 
+import com.example.demo.config.Publisher;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
 @Aspect
 public class LogAspect {
+
+    @Autowired
+    private Publisher publisher;
+    @Autowired
+    private StringRedisTemplate redisTemplate;
 
     @Pointcut("@annotation(com.example.demo.annotation.LogAnnotation)")
     public void loggableMethods() {}
@@ -16,6 +24,7 @@ public class LogAspect {
     public Object logMethodExecution(ProceedingJoinPoint joinPoint) throws Throwable {
         long start = System.currentTimeMillis();
         try {
+            publisher.send(redisTemplate);
             System.out.println("Executing method: " + joinPoint.getSignature());//1
             return joinPoint.proceed();//3
         } finally {

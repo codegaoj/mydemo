@@ -1,5 +1,6 @@
 package com.example.demo.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +15,10 @@ public class Subscriber {
     private static final String CHANNEL = "myChannel";
     @Value("${spring.redis.host}")
     private static String host;
+
+    @Autowired
+    private RedisReceiver receiver;
+
     public static void main(String[] args) {
         try (Jedis jedis = new Jedis("192.168.91.99")) {
             jedis.subscribe(new JedisPubSub() {
@@ -28,15 +33,17 @@ public class Subscriber {
     }
 
     @Bean
-    RedisMessageListenerContainer container(RedisConnectionFactory connectionFactory,
-                                            MessageListenerAdapter listenerAdapter()) {
+    RedisMessageListenerContainer container(RedisConnectionFactory connectionFactory) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
-        container.addMessageListener(listenerAdapter(), new PatternTopic("mychannel"));
+        container.afterPropertiesSet();
+        //订阅频道，通配符*表示任意多个占位符
+//        container.addMessageListener(receiver, new PatternTopic("mychanne*"));
+        container.addMessageListener(receiver, new PatternTopic("mychannel"));
         return container;
     }
 
-    @Bean
+/*    @Bean
     MessageListenerAdapter listenerAdapter(Receiver receiver) {
         return new MessageListenerAdapter(receiver, "receiveMessage");
     }
@@ -44,5 +51,5 @@ public class Subscriber {
     @Bean
     Receiver receiver() {
         return new Receiver();
-    }
+    }*/
 }
