@@ -22,7 +22,7 @@ public class RedisService {
     //3.查询在线用户
     //4.实现消息队列
     //5.实现分布式锁
-    //todo aop、拦截器（interceptor）、过滤器(filter)
+    //aop、拦截器（interceptor）、过滤器(filter)
 
     @Autowired
     private RedisTemplate<String,Object> redisTemplate;

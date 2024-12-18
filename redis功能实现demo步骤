@@ -1,0 +1,37 @@
+1.引入依赖
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+        </dependency>
+
+2.自定义RedisTemplate
+详见 com.example.demo.config.RedisConfig
+
+3.引用RedisTemplate实现常用功能
+详见 com.example.demo.config.RedisService
+
+4.使用redis实现几个小功能
+1.实现简单登录
+com.example.demo.controller.LoginController
+/api/login/graphcode 随机生成验证码并存储到redis
+/api/login/login 携带用户信息和验证码进行校验，校验通过返回token信息
+ 2.校验权限
+   通过拦截器拦截接口，校验请求头中携带的token信息是否有效，有效可继续执行逻辑
+   详见com.example.demo.interceptor
+   3.查询在线用户
+     com.example.demo.config.RedisService中的 分页查询 ZSet 中的数据。
+     4.实现消息队列
+     利用redis的发布订阅模式
+com.example.demo.config.Publisher 实现生产者
+com.example.demo.config.Subscriber 作为消费者的配置文件配置监听的频道
+com.example.demo.config.RedisReceiver 作为消费者业务实现
+
+结合aop,可以在com.example.demo.aspect.LogAspect 加入发送消息的逻辑
+
+       5.实现分布式锁
+       com.example.demo.config.RedisReceiver 多个消费者的情况下保证消息被消费一次
+       使用redis具有原子性操作的命令 redisTemplate.opsForValue().setIfAbsent
