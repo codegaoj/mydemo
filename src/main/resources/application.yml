@@ -1,0 +1,13 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: example_route
+          uri: http://example.org
+          predicates:
+            - Path=/example/**
+          filters:
+            - name: CustomGatewayFilter # 如果是通过Bean的方式注入则不需要name
+              args:
+                _headerValue: HeaderValueFromConfig # 注意这里的下划线前缀 在YAML配置中为AbstractGatewayFilterFactory类型的
+                #过滤器提供参数时，参数名称前面要加上下划线（如_headerValue），这是因为Spring Cloud Gateway会自动去掉前导下划线来匹配配置属性。
