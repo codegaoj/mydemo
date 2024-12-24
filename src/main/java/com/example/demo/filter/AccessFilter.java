@@ -19,6 +19,6 @@ public class AccessFilter implements GatewayFilter {
 
     //todo
     //接入网关逻辑和sdk
-    //使用mq模拟附件穿透逻辑
-    //高并发场景，多线程
+    //使用mq模拟附件穿透逻辑 文件上传
+    //接入es处理日志，展示PV UV等访问信息
 }

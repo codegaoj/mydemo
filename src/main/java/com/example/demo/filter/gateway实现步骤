@@ -1,0 +1,53 @@
+1.从数据库初始化，将路由信息读取到redis队列当中
+
+2.监听redis队列，取出网关信息，转换成RouteDefinition加载到路由当中
+实现RouteDefinitionRepository
+重写方法
+初始化路由
+添加路由
+查询路由
+删除路由
+
+
+3.实现GlobalFilter，自定义过滤
+第一层 CacheBodyGatewayFilter.java
+路由转发，如果请求中带了直接走没有则生成唯一链路ID
+第二层 GatewayResponseGlobalFilter.java
+将唯一链路ID，appkey等放到响应头，响应体若需要加密也在此操作
+第三层
+AccessGatewayFilter.java
+通过appkey获取appSecret对象校验通过
+校验前端传过来的referer的合法性
+校验前端传过来的Origin的合法性
+判断客户端IP是否为黑名单
+判断客户端IP是否为白名单
+校验防重放攻击通过
+验签功能 防止篡改
+鉴权功能
+解密功能 aes或sm2 签名sm3
+SM2：基于椭圆曲线公钥密码体制（ECC）的数字签名算法，用于实现非对称加密和解密以及数字签名。它提供了更高的安全性，并且在中国金融行业有广泛的应用。
+SM3：一种哈希函数，输出长度为256位的消息摘要。它用来替代MD5和SHA-1等国际通用哈希算法，以提供更强大的抗碰撞性能。
+SM4：分组密码算法，是对称加密算法，可以用于无线网络中的数据加密。它的分组长度和密钥长度均为128位。
+可记录告警日志
+第四层
+XssGatewayFilter
+xss校验，支持白名单如文件上传的一些接口
+第五层
+LoggingFilter 记录访问日志
+
+4.其他功能
+CorsConfig 跨域处理
+DefaultRedisRateLimiter extends RedisRateLimiter 限流控制
+ip 请求路径 用户
+异常处理
+CustomErrorWebExceptionHandler extends DefaultErrorWebExceptionHandler
+GateWayExceptionHandlerAdvice
+response status exception
+connect timeout exception
+not found exception
+runtime exception
+exception
+
+
+动态路由设置的方式
+
